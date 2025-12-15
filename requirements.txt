@@ -1,0 +1,24 @@
+# FastAPI web framework
+fastapi==0.115.6
+
+# ASGI server (local dev + prod)
+uvicorn[standard]==0.32.1
+
+# HTTP client for calling weather APIs
+httpx==0.27.2
+
+# Templating for simple server-rendered pages
+jinja2==3.1.4
+
+# Allows FastAPI to parse form submissions
+python-multipart==0.0.12
+
+# Pydantic v2 for schema validation
+pydantic==2.10.3
+pydantic-settings==2.6.1
+
+# Database ORM
+sqlalchemy==2.0.36
+
+# Helpful date handling utilities
+python-dateutil==2.9.0.post0

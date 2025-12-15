@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Saved Records</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 16px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f4f4f4; text-align: left; }
+    .muted { color: #666; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <a href="/">← Home</a>
+    <a href="/api/records/export?fmt=json">Export JSON</a>
+    <a href="/api/records/export?fmt=csv">Export CSV</a>
+    <a href="/api/records/export?fmt=md">Export Markdown</a>
+  </div>
+
+  <h2>Saved Records</h2>
+  <p class="muted">
+    Click a record to view details; update/delete is available via the API endpoints.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Location Input</th>
+        <th>Resolved</th>
+        <th>Date Range</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in records %}
+        <tr>
+          <td><a href="/records/{{ r.id }}">{{ r.id }}</a></td>
+          <td>{{ r.location_input }}</td>
+          <td>{{ r.resolved_name }} ({{ r.country }})</td>
+          <td>{{ r.start_date }} → {{ r.end_date }}</td>
+          <td>{{ r.created_at }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

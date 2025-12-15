@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>{{ app_name }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <script defer src="/static/icon-amcharts-map.js"></script>
+  <script defer src="/static/app.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 16px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    input { padding: 8px; min-width: 280px; }
+    button { padding: 8px 12px; cursor: pointer; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-top: 12px; }
+    .muted { color: #666; }
+    .right { margin-left: auto; }
+    dialog { border: 1px solid #ddd; border-radius: 10px; padding: 12px; max-width: 700px; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <h2 style="margin:0;">{{ app_name }}</h2>
+    <div class="right"></div>
+    <span class="muted">Candidate: <strong>{{ candidate_name }}</strong></span>
+    <button id="infoBtn">Info</button>
+    <a href="/records" style="margin-left:8px;">Saved Records (CRUD)</a>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Search weather by location</h3>
+    <!-- Simple form -> server-rendered /results page -->
+    <form class="row" action="/results" method="get">
+      <input name="q" placeholder="City, ZIP, landmark text (e.g., 'Austin, TX' or '10001')" required />
+      <button type="submit">Get Weather</button>
+    </form>
+
+    <hr/>
+
+    <h3>Use my current location</h3>
+    <div class="row">
+      <button id="geoBtn">Get Weather Near Me</button>
+      <span class="muted" id="geoStatus"></span>
+    </div>
+
+    <!-- We render geolocation weather results dynamically -->
+    <div id="geoResult" class="card" style="display:none;"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Assessment 2 (CRUD): create a stored date-range query</h3>
+    <div class="muted">
+      Stores location + date range + returned daily temps into SQLite.
+      (Daily temps are sourced from Open-Meteo; location validation comes from OpenWeather geocoding.)
+    </div>
+
+    <form id="createForm" class="row" onsubmit="return false;">
+      <input id="loc" placeholder="Location (e.g., 'Chicago, IL')" required />
+      <input id="start" type="date" required />
+      <input id="end" type="date" required />
+      <button id="createBtn">Create Record</button>
+      <span id="createStatus" class="muted"></span>
+    </form>
+  </div>
+
+  <dialog id="infoDialog">
+    <h3>About</h3>
+    <p>
+      This app was built for the PM Accelerator technical assessment.
+      It demonstrates real-time weather retrieval, location handling, 5-day forecast,
+      browser geolocation, and database persistence with CRUD + export.
+    </p>
+    <p class="muted">
+      Replace this paragraph with PM Accelerator’s official LinkedIn description as requested in the instructions.
+    </p>
+    <div class="row">
+      <button id="closeInfo">Close</button>
+    </div>
+  </dialog>
+</body>
+</html>

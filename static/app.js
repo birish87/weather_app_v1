@@ -22,6 +22,17 @@
   }
 
   // -----------------------
+  // search field info dialog controls
+  const formatInfoBtn = document.getElementById("formatInfoBtn");
+  const formatInfoDialog = document.getElementById("formatInfoDialog");
+  const closeFormatInfo = document.getElementById("closeFormatInfo");
+
+  if (formatInfoBtn && formatInfoDialog && closeFormatInfo) {
+    formatInfoBtn.addEventListener("click", () => formatInfoDialog.showModal());
+    closeFormatInfo.addEventListener("click", () => formatInfoDialog.close());
+  }
+
+  // -----------------------
   // Geolocation -> weather
   // -----------------------
   const geoBtn = document.getElementById("geoBtn");
@@ -32,15 +43,41 @@
    * Returns a local amCharts icon URL for an OpenWeather icon code (e.g. "01d").
    * Falls back to a generic icon if mapping is missing.
    */
- function getAmChartsIconUrl(openWeatherIconCode) {
-  try {
-    const file = mapOwmToAmChartsSvg(openWeatherIconCode);
-    return `/static/icons/amcharts/${file || "cloudy.svg"}`;
-  } catch (e) {
-    console.warn("Icon mapping failed:", openWeatherIconCode);
-    return "/static/icons/amcharts/cloudy.svg";
+  function getAmChartsIconUrl(openWeatherIconCode) {
+    // Always fall back to something that exists in your folder
+    const FALLBACK = "cloudy.svg";
+
+    try {
+      const file = mapOwmToAmChartsSvg(openWeatherIconCode);
+      return `/static/icons/amcharts/${file || FALLBACK}`;
+    } catch (e) {
+      console.warn("Icon mapping failed:", openWeatherIconCode, e);
+      return `/static/icons/amcharts/${FALLBACK}`;
+    }
   }
+
+  /**
+  * precipitation helper
+  */
+  function accumulatePrecipByDate(raw) {
+    const tzOffset = raw?.city?.timezone ?? 0;
+    const items = raw?.list ?? [];
+
+    const totals = new Map(); // YYYY-MM-DD -> mm
+
+    for (const it of items) {
+      const d = new Date((it.dt + tzOffset) * 1000);
+      const dateKey = d.toISOString().slice(0, 10);
+
+      const rain = Number(it?.rain?.["3h"] ?? 0);
+      const snow = Number(it?.snow?.["3h"] ?? 0);
+      const mm = rain + snow;
+
+      totals.set(dateKey, (totals.get(dateKey) ?? 0) + mm);
+  }
+    return totals;
 }
+
 
   /**
    * Creates a small HTML card for:
@@ -48,14 +85,20 @@
    * - 5-day forecast (daily summary)
    * Uses amCharts icons instead of OpenWeather-hosted PNGs.
    */
+
   function renderWeatherCard(payload) {
-  // display of location in current-location
+    // display of location in current-location
     const loc = payload.resolved || {};
-      const locationLine = [
-        loc.name || "Current Location",
-        loc.state || "",
-        loc.country || ""
-      ].filter(Boolean).join(", ");
+    const locationLine = [
+      loc.name || "Current Location",
+      loc.state || "",
+      loc.country || "",
+    ].filter(Boolean).join(", ");
+
+    //precipitation accumulation map
+    const precipByDate = payload.forecast_3h
+      ? accumulatePrecipByDate(payload.forecast_3h)
+      : new Map();
 
     const w = payload.current.weather[0];
     const days = payload.five_day || []; // <-- this was missing in your snippet
@@ -71,21 +114,34 @@
 
     const daysHtml = days
       .map((d) => {
+        const dateKey = d.date; // MUST be YYYY-MM-DD
+        const precipMm = precipByDate.get(dateKey) ?? 0;
+
         const dayIconUrl = getAmChartsIconUrl(d.icon);
+        // pop_pct comes from backend (0..100). Allow 0 to display as "0%".
+        const popText = (d.pop_pct === 0 || typeof d.pop_pct === "number")
+          ? `${d.pop_pct}%`
+          : "--";
+
         return `
           <div style="border:1px solid #ddd;border-radius:8px;padding:8px;">
-            <div><b>${d.date}</b></div>
+            <div><b>${d.dow} — ${d.date_display}</b></div>
+
             <img class="amcharts-icon"
-                 alt="weather icon"
                  src="${dayIconUrl}"
-                 style="width:100px;height:100px;object-fit:contain;" />
+                 alt="weather icon"
+                 style="width:100px;height:100px;" />
+
             <div style="color:#666;">${d.description}</div>
+            <div>🌧 Chance of precipitation: <b>${popText}</b></div>
+            <div>💧 Total precip: ${precipMm.toFixed(1)} mm</div>
             <div>Low: ${d.tmin}°F</div>
             <div>High: ${d.tmax}°F</div>
           </div>
         `;
       })
       .join("");
+
 
     console.log("Current:", w.main, w.description, "icon:", w.icon);
 
@@ -114,7 +170,6 @@
     `;
   }
 
-
   if (geoBtn) {
     geoBtn.addEventListener("click", () => {
       geoStatus.textContent = "";
@@ -136,6 +191,7 @@
 
             const resp = await fetch(
               `/api/weather/by-coords?lat=${latitude}&lon=${longitude}`
+            //`/api/weather/by-coords?lat=55.0084&lon=82.9357`
             );
             const data = await resp.json();
 
@@ -163,7 +219,7 @@
   // -----------------------
   const createBtn = document.getElementById("createBtn");
   const createStatus = document.getElementById("createStatus");
-  const loc = document.getElementById("loc");
+  const locInput = document.getElementById("loc");
   const start = document.getElementById("start");
   const end = document.getElementById("end");
 
@@ -173,7 +229,7 @@
 
       try {
         const payload = {
-          location: loc.value.trim(),
+          location: locInput.value.trim(),
           start_date: start.value,
           end_date: end.value,
         };

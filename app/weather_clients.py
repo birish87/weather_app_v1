@@ -10,12 +10,12 @@ We intentionally separate API logic from FastAPI endpoints:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
 from typing import Any, Dict, List, Tuple
+from collections import Counter, defaultdict
 import httpx
 import re
 from typing import Optional
-
 
 
 @dataclass(frozen=True)
@@ -49,6 +49,7 @@ class OpenWeatherClient:
 
     We use units=imperial for display in the UI; you can swap to metric easily.
     """
+
     def __init__(self, api_key: str, timeout_s: float = 10.0):
         self.api_key = api_key
         self.timeout_s = timeout_s
@@ -70,7 +71,8 @@ class OpenWeatherClient:
         3) Place name: "Austin, TX" or "Paris, FR"
            - Uses OpenWeather direct geocoding; we select the top match.
         """
-        raw = query.strip()
+        # raw = query.strip()
+        raw = query.strip().strip("'\"")
 
         # ---------------------------------------------------------------------
         # 1) Coordinate detection: "lat,lon" (optional whitespace)
@@ -145,6 +147,85 @@ class OpenWeatherClient:
                 lat=float(data["lat"]),
                 lon=float(data["lon"]),
             )
+        # ---------------------------------------------------------------------
+        # 2b) International postal codes (must include country code)
+        # Accept:
+        #   A) "SW1A 1AA, London, GB"
+        #   B) "10115, DE" i.e., Berlin Germany
+        # Won't work:
+        #   C) "SW1A 1AA, GB"
+        # ---------------------------------------------------------------------
+
+        # B) "POSTAL, CITY, CC"
+        postal_city_cc = re.fullmatch(
+            r"(?i)\s*([A-Z0-9][A-Z0-9 \-]{2,12})\s*,\s*([^,]{2,64})\s*,\s*([A-Z]{2})\s*",
+            raw,
+        )
+        if postal_city_cc:
+            postal = postal_city_cc.group(1).strip()
+            city = postal_city_cc.group(2).strip()
+            country = postal_city_cc.group(3).upper()
+
+            # Try a few query variants (OpenWeather is picky)
+            candidates = [
+                f"{postal}, {city}, {country}",
+                f"{city}, {country} {postal}",
+                f"{postal}, {country}",
+            ]
+
+            async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+                for q in candidates:
+                    r = await client.get(f"{self.base}/geo/1.0/direct",
+                                         params={"q": q, "limit": 5, "appid": self.api_key})
+                    if r.status_code != 200:
+                        continue
+                    results = r.json() or []
+                    if results:
+                        best = results[0]
+                        return ResolvedLocation(
+                            name=best.get("name", raw),
+                            state=best.get("state", ""),
+                            country=best.get("country", country),
+                            lat=float(best["lat"]),
+                            lon=float(best["lon"]),
+                        )
+
+            raise WeatherError(
+                "Postal code not found for that city/country. Try 'SW1A 1AA, GB' "
+                "or verify spelling/country code."
+            )
+
+        # A) "POSTAL, CC"
+        postal_cc = re.fullmatch(
+            r"(?i)\s*([A-Z0-9][A-Z0-9 \-]{2,12})\s*,\s*([A-Z]{2})\s*",
+            raw,
+        )
+        if postal_cc:
+            postal = postal_cc.group(1).strip()
+            country = postal_cc.group(2).upper()
+
+            async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+                # try a couple variants
+                for q in (f"{postal}, {country}", f"{postal} {country}"):
+                    r = await client.get(f"{self.base}/geo/1.0/direct",
+                                         params={"q": q, "limit": 5, "appid": self.api_key})
+                    if r.status_code != 200:
+                        continue
+                    results = r.json() or []
+                    if results:
+                        best = results[0]
+                        return ResolvedLocation(
+                            name=best.get("name", raw),
+                            state=best.get("state", ""),
+                            country=best.get("country", country),
+                            lat=float(best["lat"]),
+                            lon=float(best["lon"]),
+                        )
+
+            raise WeatherError(
+                "Postal code not found. Try adding the city too (e.g., 'SW1A 1AA, London, GB') "
+                "or confirm the country code."
+            )
 
         # ---------------------------------------------------------------------
         # 3) Default: place / city direct geocoding ("Austin, TX", "Paris, FR")
@@ -216,7 +297,7 @@ class OpenWeatherClient:
 
         def local_day(dt_utc: int) -> date:
             # Convert forecast timestamp (UTC) into the city's local date
-            return datetime.utcfromtimestamp(dt_utc + tz_offset).date()
+            return datetime.fromtimestamp(dt_utc + tz_offset, tz=timezone.utc).date()
 
         grouped: Dict[date, List[Dict[str, Any]]] = {}
         for item in items:
@@ -226,6 +307,16 @@ class OpenWeatherClient:
         days: List[Dict[str, Any]] = []
         for d in sorted(grouped.keys())[:5]:
             steps = grouped[d]
+
+            # percent chance of precipitation for the day
+            pops = []
+            for x in steps:
+                # pop is 0..1, may not exist on all steps
+                if "pop" in x and x["pop"] is not None:
+                    pops.append(float(x["pop"]))
+
+            pop_max = max(pops) if pops else None  # 0..1
+            pop_pct = round(pop_max * 100) if pop_max is not None else None
 
             temps = [
                 float(x["main"]["temp"])
@@ -246,11 +337,15 @@ class OpenWeatherClient:
             (icon, desc) = max(counts.items(), key=lambda kv: kv[1])[0] if counts else ("", "")
 
             days.append({
-                "date": d.isoformat(),
+                "date": d.isoformat(),  # keep existing ISO date
+                "dow": d.strftime("%a"),  # e.g., "Fri"
+                "date_display": d.strftime("%b %d, %Y"),  # e.g., "Dec 14, 2025"
                 "tmin": tmin,
                 "tmax": tmax,
                 "icon": icon,
                 "description": desc,
+                "pop_max": pop_max,
+                "pop_pct": pop_pct,
             })
 
         return days
@@ -265,6 +360,7 @@ class OpenMeteoClient:
     - Provides daily min/max directly for a date window
     - Easy to store in DB
     """
+
     def __init__(self, timeout_s: float = 10.0):
         self.timeout_s = timeout_s
         self.base = "https://api.open-meteo.com/v1/forecast"

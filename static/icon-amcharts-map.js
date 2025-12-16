@@ -44,7 +44,7 @@ function mapOwmToAmChartsSvg(iconCode) {
     // Mist / fog / haze
     case "50d":
     case "50n":
-      return "weather.svg";
+      return "cloudy.svg";
 
     // Safe fallback
     default:

@@ -103,6 +103,7 @@ async def results_page(request: Request, q: str = Query(..., min_length=2, max_l
             "current": current,
             "five_day": five_day,
             "candidate_name": settings.candidate_name,
+            "forecast_3h": forecast_raw,
         },
     )
 

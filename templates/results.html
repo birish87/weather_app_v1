@@ -1,79 +1,84 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>Weather Results</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 16px; }
-    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-top: 12px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
-    .muted { color: #666; }
-    .amcharts-icon {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-    }
-    .amcharts-icon:hover {
-      transform: scale(1.08);
-      transition: transform 0.2s ease-in-out;
-    }
-  </style>
+    <meta charset="utf-8"/>
+    <title>Weather Results</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 16px; }
+        .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-top: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+        .muted { color: #666; }
+        .amcharts-icon {
+          width: 100px;
+          height: 100px;
+          object-fit: contain;
+        }
+        .amcharts-icon:hover {
+          transform: scale(1.08);
+          transition: transform 0.2s ease-in-out;
+        }
+    </style>
 </head>
 <body>
-  <a href="/">← Home</a>
-  <h2>Weather for: {{ q }}</h2>
+<a href="/">← Home</a>
+<h2>Weather for: {{ q }}</h2>
 
-  {% if error %}
-    <div class="card">
-      <strong>Error:</strong> {{ error }}
-    </div>
-  {% else %}
-    <div class="card">
-      <div><strong>Resolved:</strong> {{ resolved.name }}, {{ resolved.state }} {{ resolved.country }}</div>
-      <div class="muted">lat={{ resolved.lat }}, lon={{ resolved.lon }}</div>
-    </div>
+{% if error %}
+<div class="card">
+    <strong>Error:</strong> {{ error }}
+</div>
+{% else %}
+<div class="card">
+    <div><strong>Resolved:</strong> {{ resolved.name }}, {{ resolved.state }} {{ resolved.country }}</div>
+    <div class="muted">lat={{ resolved.lat }}, lon={{ resolved.lon }}</div>
+</div>
 
-    <div class="card">
-      <h3 style="margin-top:0;">Current</h3>
-      {% set w = current.weather[0] %}
-      <div style="display:flex;align-items:center;gap:10px;">
+<div class="card">
+    <h3 style="margin-top:0;">Current</h3>
+    {% set w = current.weather[0] %}
+    <div style="display:flex;align-items:center;gap:10px;">
         <!-- OpenWeather icon codes map to a hosted PNG -->
-<!--        <img alt="icon" src="https://openweathermap.org/img/wn/{{ w.icon }}@2x.png" />-->
-        <img class="amcharts-icon" data-owm-icon="{{ w.icon }}" alt="weather icon" src="" />
+        <!--        <img alt="icon" src="https://openweathermap.org/img/wn/{{ w.icon }}@2x.png" />-->
+        <img class="amcharts-icon" data-owm-icon="{{ w.icon }}" alt="weather icon" src=""/>
         <div>
-          <div><strong>{{ w.main }}</strong> — {{ w.description }}</div>
-          <div>Temp: {{ current.main.temp }}°F (feels like {{ current.main.feels_like }}°F)</div>
-          <div>Humidity: {{ current.main.humidity }}% | Wind: {{ current.wind.speed }} mph</div>
+            <div><strong>{{ w.main }}</strong> — {{ w.description }}</div>
+            <div>Temp: {{ current.main.temp }}°F (feels like {{ current.main.feels_like }}°F)</div>
+            <div>Humidity: {{ current.main.humidity }}% | Wind: {{ current.wind.speed }} mph</div>
         </div>
-      </div>
     </div>
+</div>
 
-    <div class="card">
-      <h3 style="margin-top:0;">5-day forecast (daily summary)</h3>
-      <div class="grid">
+<div class="card">
+    <h3 style="margin-top:0;">5-day forecast (daily summary)</h3>
+    <div class="grid">
         {% for d in five_day %}
-          <div class="card">
-            <div><strong>{{ d.date }}</strong></div>
-<!--            <img alt="icon" src="https://openweathermap.org/img/wn/{{ d.icon }}@2x.png" />-->
-            <img class="amcharts-icon" data-owm-icon="{{ d.icon }}" alt="weather icon" src="" />
+        <div class="card">
+            <div><strong>{{ d.dow }} — {{ d.date_display }}</strong></div>
+            <!--            <img alt="icon" src="https://openweathermap.org/img/wn/{{ d.icon }}@2x.png" />-->
+            <img class="amcharts-icon" data-owm-icon="{{ d.icon }}" alt="weather icon" src=""/>
             <div class="muted">{{ d.description }}</div>
+            {% if d.pop_pct is not none%}
+            <div>🌧 Chance of precipitation: <b>{{ d.pop_pct }}%</b></div>
+            {% else %}
+            <div>🌧 Chance of precipitation: --</div>
+            {% endif %}
             <div>Low: {{ d.tmin }}°F</div>
             <div>High: {{ d.tmax }}°F</div>
-          </div>
+        </div>
         {% endfor %}
-      </div>
     </div>
-  {% endif %}
+</div>
+{% endif %}
 <script defer src="/static/icon-amcharts-map.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("img.amcharts-icon").forEach(img => {
-      const code = img.getAttribute("data-owm-icon");
-      const file = mapOwmToAmChartsSvg(code);
-      img.src = `/static/icons/amcharts/${file}`;
+    document.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll("img.amcharts-icon").forEach(img => {
+        const code = img.getAttribute("data-owm-icon");
+        const file = mapOwmToAmChartsSvg(code);
+        img.src = `/static/icons/amcharts/${file}`;
+      });
     });
-  });
 </script>
 </body>
 </html>

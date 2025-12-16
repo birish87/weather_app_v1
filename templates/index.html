@@ -37,6 +37,23 @@
           background: #f5f5f5;
           border-color: #999;
         }
+
+        .spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid #ddd;
+          border-top-color: #666;
+          border-radius: 50%;
+          display: inline-block;
+          animation: spin 0.8s linear infinite;
+          vertical-align: -2px;
+          margin-right: 6px;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
     </style>
 </head>
 <body>
@@ -51,7 +68,7 @@
 <div class="card">
     <h3 style="margin-top:0;">Search weather by location</h3>
     <!-- Simple form -> server-rendered /results page -->
-    <form class="row" action="/results" method="get" style="align-items:center;">
+    <form id="searchForm" class="row" action="/results" method="get" style="align-items:center;">
         <input name="q" placeholder="City, ZIP, postal, landmark, or coordinates" required/>
 
         <button
@@ -67,13 +84,20 @@
         <button type="submit">Get Weather</button>
     </form>
 
+    <div id="searchStatus" class="muted" style="display:none; margin-top:8px;">
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Fetching weather…</span>
+    </div>
+
 
     <dialog id="formatInfoDialog">
         <h3>Accepted location formats</h3>
         <div class="muted">
-            <p><b>US city/state:</b> <code>Newark, NJ US</code></p>
-            <p><b>US ZIP:</b> <code>10001</code> or <code>10001-1234</code> | <code>10001,US</code></p>
-            <p><b>International city:</b> <code>Paris, FR</code> | <code>Berlin, DE</code></p>
+            <p><b>US city/state:</b> <code>Boston Massachusetts</code> | <code>Boston MA</code> | <code>Newark NJ</code>
+                | <code>Newark, NJ US</code></p>
+            <p><b>US ZIP:</b> <code>10001</code> | <code>10001-1234</code> | <code>10001,US</code></p>
+            <p><b>International city:</b> <code>Paris France</code> | <code>Paris FR</code> | <code>Paris, FR</code> |
+                <code>Berlin, DE</code></p>
             <p><b>International postal (recommended):</b> <code>10115, DE</code> | <code>SW1A 1AA, GB</code></p>
             <p><b>Postal + city (if postal alone fails):</b> <code>SW1A 1AA, London, GB</code></p>
             <p><b>Landmark:</b> <code>Eiffel Tower</code> | <code>Statue of Liberty</code></p>

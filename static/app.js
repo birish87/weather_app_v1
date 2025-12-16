@@ -10,6 +10,23 @@
  */
 (function () {
   // -----------------------
+  // Get Weather spinner controls
+  // -----------------------
+  const searchForm = document.getElementById("searchForm");
+  const searchStatus = document.getElementById("searchStatus");
+
+  if (searchForm && searchStatus) {
+    searchForm.addEventListener("submit", () => {
+      // Show loading indicator immediately
+      searchStatus.style.display = "block";
+
+      // Optional: disable the submit button so user can't spam-click
+      const submitBtn = searchForm.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+    });
+  }
+
+  // -----------------------
   // Info dialog controls
   // -----------------------
   const infoBtn = document.getElementById("infoBtn");
@@ -23,6 +40,7 @@
 
   // -----------------------
   // search field info dialog controls
+  // -----------------------
   const formatInfoBtn = document.getElementById("formatInfoBtn");
   const formatInfoDialog = document.getElementById("formatInfoDialog");
   const closeFormatInfo = document.getElementById("closeFormatInfo");

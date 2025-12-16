@@ -153,6 +153,18 @@
       payload.resolved?.name ||
       "Your current location";
 
+    const lat = payload?.resolved?.lat;
+    const lon = payload?.resolved?.lon;
+
+    const mapsUrl = (typeof lat === "number" && typeof lon === "number")
+      ? `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
+      : null;
+
+    const youtubeQuery = encodeURIComponent(
+      `${payload?.resolved?.name || ""} ${payload?.resolved?.state || ""} ${payload?.resolved?.country || ""}`.trim()
+    );
+    const youtubeUrl = `https://www.youtube.com/results?search_query=${youtubeQuery}`;
+
     const daysHtml = days
       .map((d) => {
         const dateKey = d.date; // MUST be YYYY-MM-DD
@@ -190,6 +202,19 @@
       <div style="margin-bottom:8px;color:#666;">
         <b>Current location:</b> ${locationLabel}
       </div>
+
+      ${mapsUrl ? `
+        <div class="muted" style="margin:6px 0 12px 0;">
+    📍       <a href="${mapsUrl}" target="_blank" rel="noopener">View on Google Maps</a>
+          &nbsp;|&nbsp;
+    🎥       <a href="${youtubeUrl}" target="_blank" rel="noopener">Watch videos</a>
+        </div>
+    ` : `
+        <div class="muted" style="margin:6px 0 12px 0;">
+            🎥 <a href="${youtubeUrl}" target="_blank" rel="noopener">Watch videos</a>
+        </div>
+      `}
+
 
       <div style="display:flex;align-items:center;gap:10px;">
         <img class="amcharts-icon"

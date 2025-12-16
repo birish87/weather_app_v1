@@ -32,7 +32,18 @@
 <div class="card">
     <div><strong>Resolved:</strong> {{ resolved.name }}, {{ resolved.state }} {{ resolved.country }}</div>
     <div class="muted">lat={{ resolved.lat }}, lon={{ resolved.lon }}</div>
+
+    <div class="muted" style="margin-top:6px;">
+        📍
+        <a href="https://www.google.com/maps/search/?api=1&query={{ resolved.lat }},{{ resolved.lon }}"
+           target="_blank" rel="noopener">View on Google Maps</a>
+        &nbsp;|&nbsp;
+        🎥
+        <a href="https://www.youtube.com/results?search_query={{ (resolved.name ~ ' ' ~ resolved.state ~ ' ' ~ resolved.country)|urlencode }}"
+           target="_blank" rel="noopener">Watch videos</a>
+    </div>
 </div>
+
 
 <div class="card">
     <h3 style="margin-top:0;">Current</h3>

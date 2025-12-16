@@ -24,6 +24,7 @@ from .schemas import RecordCreate, RecordUpdate
 from .weather_clients import OpenWeatherClient, OpenMeteoClient, WeatherError
 from .crud import create_record, list_records, get_record, update_record, delete_record
 from .exporters import export_json, export_csv, export_markdown
+from urllib.parse import quote_plus
 
 # Create tables automatically (simple for assessments).
 Base.metadata.create_all(bind=engine)
@@ -81,9 +82,12 @@ async def results_page(request: Request, q: str = Query(..., min_length=2, max_l
     - geocode -> lat/lon
     - current weather
     - 5-day forecast summarized to daily cards
+    - link to YouTube search for location
     """
     try:
         resolved = await owm.geocode(q)
+        youtube_query = quote_plus(f"{resolved.name} {resolved.state} {resolved.country}".strip())
+        youtube_url = f"https://www.youtube.com/results?search_query={youtube_query}"
         current = await owm.current_weather(resolved.lat, resolved.lon, units="imperial")
         forecast_raw = await owm.forecast_5day_3h(resolved.lat, resolved.lon, units="imperial")
         five_day = owm.summarize_to_5_days(forecast_raw)
@@ -104,6 +108,7 @@ async def results_page(request: Request, q: str = Query(..., min_length=2, max_l
             "five_day": five_day,
             "candidate_name": settings.candidate_name,
             "forecast_3h": forecast_raw,
+            "youtube_url": youtube_url
         },
     )
 
@@ -163,6 +168,7 @@ async def api_weather_by_coords(lat: float, lon: float):
             "resolved": resolved.__dict__,
             "current": current,
             "five_day": five_day,
+            "forecast_3h": forecast_raw,
         }
     except WeatherError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -187,6 +193,7 @@ def api_list_records(limit: int = 100, offset: int = 0, db: Session = Depends(ge
     """List records with pagination."""
     recs = list_records(db, limit=limit, offset=offset)
     return [record_to_dict(r) for r in recs]
+
 
 # -------------------------
 # Export endpoint
@@ -235,6 +242,3 @@ def api_delete_record(record_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Record not found")
     delete_record(db, r)
     return {"ok": True}
-
-
-

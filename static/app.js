@@ -9,6 +9,17 @@
  * - The mapping function mapOwmToAmChartsSvg(iconCode) MUST be loaded before this file.
  */
 (function () {
+  // ------------------------
+  // geospinner controls (i.e., "Get Weather Near Me" button)
+  // ------------------------
+  const geoSpinner = document.getElementById("geoSpinner");
+
+  function setGeoLoading(isLoading, msg = "") {
+    if (geoStatus) geoStatus.textContent = msg;
+    if (geoSpinner) geoSpinner.style.display = isLoading ? "inline-block" : "none";
+    if (geoBtn) geoBtn.disabled = isLoading;
+  }
+
   // -----------------------
   // Get Weather spinner controls
   // -----------------------
@@ -189,19 +200,18 @@
   }
 
   geoBtn.addEventListener("click", () => {
-  geoStatus.textContent = "Getting your location…";
   geoResult.style.display = "none";
   geoResult.innerHTML = "";
+  setGeoLoading(true, "Getting your location…");
   getLocationWithRetry(1);
 });
-
 
   function getLocationWithRetry(retries = 1) {
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       try {
         const { latitude, longitude } = pos.coords;
-        geoStatus.textContent = "Fetching weather…";
+        setGeoLoading(true, "Fetching weather…");
 
         const resp = await fetch(
           `/api/weather/by-coords?lat=${latitude}&lon=${longitude}`
@@ -212,7 +222,7 @@
 
         geoResult.innerHTML = renderWeatherCard(data);
         geoResult.style.display = "block";
-        geoStatus.textContent = "";
+        setGeoLoading(false, "");
       } catch (e) {
         geoStatus.textContent = e.message;
       }
@@ -222,8 +232,10 @@
         console.warn("Retrying geolocation…", err);
         setTimeout(() => getLocationWithRetry(retries - 1), 600);
       } else {
-        geoStatus.textContent =
-          "Unable to get location. Please allow location access and try again.";
+        setGeoLoading(
+        false,
+        "Unable to get location. Please allow location access and try again."
+        );
       }
     },
     {

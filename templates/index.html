@@ -115,7 +115,10 @@
     <div class="row">
         <button id="geoBtn">Get Weather Near Me</button>
         <span class="muted" id="geoStatus"></span>
+        <!-- NEW: spinner (hidden by default) -->
+        <span id="geoSpinner" class="spinner" style="display:none;" aria-hidden="true"></span>
     </div>
+
 
     <!-- We render geolocation weather results dynamically -->
     <div id="geoResult" class="card" style="display:none;"></div>

@@ -12,10 +12,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, date, timezone, timedelta
 from typing import Any, Dict, List, Tuple
-from collections import Counter, defaultdict
+import asyncio
 import httpx
 import re
-from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -258,24 +257,61 @@ class OpenWeatherClient:
             lon=float(best["lon"]),
         )
 
-    async def nominatim_geocode(self, q: str) -> "ResolvedLocation | None":
-        # Nominatim requires a valid User-Agent
-        headers = {"User-Agent": "weather-app-v1 (local dev)"}
+    async def _get_json_with_retry_on_timeout(
+            self,
+            client: httpx.AsyncClient,
+            url: str,
+            *,
+            params: dict,
+            retries: int = 2,  # total tries = retries + 1
+            backoff_s: float = 0.5,  # 0.5s, 1.0s, 2.0s ...
+    ) -> list[dict]:
+        """
+        Retry only on transient network issues (timeouts / connect errors).
+        We do NOT retry on HTTP status codes because those are usually permanent
+        (bad query, rate limited, etc.). We handle those separately.
+        """
+        last_exc: Exception | None = None
 
-        params = {
-            "q": q,
-            "format": "json",
-            "limit": 1,
-            "addressdetails": 1,
-        }
+        for attempt in range(retries + 1):
+            try:
+                r = await client.get(url, params=params)
+
+                # If we get a non-200, don't loop forever; return empty -> caller treats as "no result"
+                if r.status_code != 200:
+                    return []
+
+                data = r.json()
+                return data if isinstance(data, list) else []
+
+            except (httpx.ReadTimeout, httpx.ConnectTimeout) as e:
+                last_exc = e
+                if attempt == retries:
+                    raise
+                await asyncio.sleep(backoff_s * (2 ** attempt))
+
+        # Shouldn't reach here, but keeps type-checkers happy
+        if last_exc:
+            raise last_exc
+        return []
+
+    async def nominatim_geocode(self, q: str) -> "ResolvedLocation | None":
+        headers = {"User-Agent": "weather-app-v1 (local dev)"}
+        params = {"q": q, "format": "json", "limit": 1, "addressdetails": 1}
 
         async with httpx.AsyncClient(timeout=self.timeout_s, headers=headers) as client:
-            r = await client.get("https://nominatim.openstreetmap.org/search", params=params)
+            try:
+                results = await self._get_json_with_retry_on_timeout(
+                    client,
+                    "https://nominatim.openstreetmap.org/search",
+                    params=params,
+                    retries=2,  # 3 total tries
+                    backoff_s=0.6,
+                )
+            except (httpx.ReadTimeout, httpx.ConnectTimeout):
+                # If Nominatim is flaky, just treat it as no result and let caller show normal error
+                return None
 
-        if r.status_code != 200:
-            return None
-
-        results = r.json() or []
         if not results:
             return None
 

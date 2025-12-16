@@ -239,9 +239,14 @@ class OpenWeatherClient:
 
         results = r.json() or []
         if not results:
+            # Landmark/POI fallback via Nominatim
+            nom = await self.nominatim_geocode(raw)
+            if nom:
+                return nom
+
+            # If that also fails, show your original error
             raise WeatherError(
-                "Location not found. Try a more specific query "
-                "(e.g., 'Paris, FR', 'Austin, TX', '10001,US', or '40.7128,-74.0060')."
+                "Location not found. Try a more specific query, following the formatting specified in the info 'i' modal"
             )
 
         best = results[0]
@@ -249,6 +254,37 @@ class OpenWeatherClient:
             name=best.get("name", raw),
             state=best.get("state", ""),
             country=best.get("country", ""),
+            lat=float(best["lat"]),
+            lon=float(best["lon"]),
+        )
+
+    async def nominatim_geocode(self, q: str) -> "ResolvedLocation | None":
+        # Nominatim requires a valid User-Agent
+        headers = {"User-Agent": "weather-app-v1 (local dev)"}
+
+        params = {
+            "q": q,
+            "format": "json",
+            "limit": 1,
+            "addressdetails": 1,
+        }
+
+        async with httpx.AsyncClient(timeout=self.timeout_s, headers=headers) as client:
+            r = await client.get("https://nominatim.openstreetmap.org/search", params=params)
+
+        if r.status_code != 200:
+            return None
+
+        results = r.json() or []
+        if not results:
+            return None
+
+        best = results[0]
+        addr = best.get("address") or {}
+        return ResolvedLocation(
+            name=best.get("display_name", q),
+            state=addr.get("state", "") or addr.get("region", "") or "",
+            country=(addr.get("country_code", "") or "").upper(),
             lat=float(best["lat"]),
             lon=float(best["lon"]),
         )

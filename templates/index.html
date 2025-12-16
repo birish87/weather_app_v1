@@ -52,7 +52,7 @@
     <h3 style="margin-top:0;">Search weather by location</h3>
     <!-- Simple form -> server-rendered /results page -->
     <form class="row" action="/results" method="get" style="align-items:center;">
-        <input name="q" placeholder="City, ZIP, postal, or coordinates" required/>
+        <input name="q" placeholder="City, ZIP, postal, landmark, or coordinates" required/>
 
         <button
                 type="button"
@@ -71,11 +71,12 @@
     <dialog id="formatInfoDialog">
         <h3>Accepted location formats</h3>
         <div class="muted">
-            <p><b>US city/state:</b> <code>Newark, NJ US</code> (we assume US)</p>
-            <p><b>US ZIP:</b> <code>10001</code> or <code>10001-1234</code> or <code>10001,US</code></p>
-            <p><b>International city:</b> <code>Paris, FR</code> or <code>Berlin, DE</code></p>
-            <p><b>International postal (recommended):</b> <code>10115, DE</code> or <code>SW1A 1AA, GB</code></p>
+            <p><b>US city/state:</b> <code>Newark, NJ US</code></p>
+            <p><b>US ZIP:</b> <code>10001</code> or <code>10001-1234</code> | <code>10001,US</code></p>
+            <p><b>International city:</b> <code>Paris, FR</code> | <code>Berlin, DE</code></p>
+            <p><b>International postal (recommended):</b> <code>10115, DE</code> | <code>SW1A 1AA, GB</code></p>
             <p><b>Postal + city (if postal alone fails):</b> <code>SW1A 1AA, London, GB</code></p>
+            <p><b>Landmark:</b> <code>Eiffel Tower</code> | <code>Statue of Liberty</code></p>
             <p><b>Coordinates:</b> <code>40.7128,-74.0060</code></p>
         </div>
         <div class="row">

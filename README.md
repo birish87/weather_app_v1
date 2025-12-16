@@ -53,7 +53,7 @@ Open: http://127.0.0.1:8000
 
 ### Assessment 1
 ```bash
-curl "http://127.0.0.1:8000/api/weather?q=Austin,TX"
+curl "http://127.0.0.1:8000/api/weather?q=Austin,TX%20US"
 ```
 
 ### Assessment 2 create record

@@ -1,4 +1,4 @@
-# Weather App - Tech Assessments 1 & 2 (Pre-YouTube)
+# Weather App - Tech Assessments 1 & 2 (Includes 2.1, 2.2, & 2.3)
 
 Implements:
 
@@ -17,6 +17,7 @@ Implements:
   - stores results in SQLite
 - Read / Update / Delete records
 - Export records to JSON / CSV / Markdown
+- YouTube and Google Maps integration
 
 ### API Choices
 - OpenWeatherMap:
@@ -26,6 +27,8 @@ Implements:
 - Open-Meteo (no API key needed):
   - Daily min/max temps for a requested date range
   - Used for the "CRUD date-range temperature storage" requirement
+- Nominatim
+  - for landmark data lookup
 
 ## Setup
 

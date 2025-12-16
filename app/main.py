@@ -188,6 +188,22 @@ def api_list_records(limit: int = 100, offset: int = 0, db: Session = Depends(ge
     recs = list_records(db, limit=limit, offset=offset)
     return [record_to_dict(r) for r in recs]
 
+# -------------------------
+# Export endpoint
+# -------------------------
+
+@app.get("/api/records/export")
+def api_export_records(fmt: str = Query("json", pattern="^(json|csv|md)$"), db: Session = Depends(get_db)):
+    """Export records to JSON/CSV/Markdown."""
+    recs = [record_to_dict(r) for r in list_records(db, limit=1000, offset=0)]
+    if fmt == "json":
+        return PlainTextResponse(export_json(recs), media_type="application/json")
+    if fmt == "csv":
+        return PlainTextResponse(export_csv(recs), media_type="text/csv")
+    if fmt == "md":
+        return PlainTextResponse(export_markdown(recs), media_type="text/markdown")
+    raise HTTPException(status_code=400, detail="Unsupported format")
+
 
 @app.get("/api/records/{record_id}")
 def api_get_record(record_id: int, db: Session = Depends(get_db)):
@@ -221,18 +237,4 @@ def api_delete_record(record_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 
-# -------------------------
-# Export endpoint
-# -------------------------
 
-@app.get("/api/records/export")
-def api_export_records(fmt: str = Query("json", pattern="^(json|csv|md)$"), db: Session = Depends(get_db)):
-    """Export records to JSON/CSV/Markdown."""
-    recs = [record_to_dict(r) for r in list_records(db, limit=1000, offset=0)]
-    if fmt == "json":
-        return PlainTextResponse(export_json(recs), media_type="application/json")
-    if fmt == "csv":
-        return PlainTextResponse(export_csv(recs), media_type="text/csv")
-    if fmt == "md":
-        return PlainTextResponse(export_markdown(recs), media_type="text/markdown")
-    raise HTTPException(status_code=400, detail="Unsupported format")

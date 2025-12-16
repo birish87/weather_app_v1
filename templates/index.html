@@ -132,12 +132,16 @@
     </div>
 
     <form id="createForm" class="row" onsubmit="return false;">
-        <input id="loc" placeholder="Location (e.g., 'Chicago, IL')" required/>
-        <input id="start" type="date" required/>
-        <input id="end" type="date" required/>
-        <button id="createBtn">Create Record</button>
-        <span id="createStatus" class="muted"></span>
+      <input id="loc" placeholder="City, ZIP, postal, landmark, or coordinates" required />
+      <input id="start" type="date" required />
+      <input id="end" type="date" required />
+
+      <button id="createBtn">Create Record</button>
+
+      <span id="createSpinner" class="spinner" style="display:none;"></span>
+      <span id="createStatus" class="muted"></span>
     </form>
+
 </div>
 
 <dialog id="infoDialog">

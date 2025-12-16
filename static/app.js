@@ -9,6 +9,18 @@
  * - The mapping function mapOwmToAmChartsSvg(iconCode) MUST be loaded before this file.
  */
 (function () {
+
+  // ------------------------
+  // assessment 2 create record, spinner
+  // ------------------------
+  const createSpinner = document.getElementById("createSpinner");
+
+  function setCreateLoading(isLoading, message = "") {
+    createStatus.textContent = message;
+    createSpinner.style.display = isLoading ? "inline-block" : "none";
+    createBtn.disabled = isLoading;
+  }
+
   // ------------------------
   // geospinner controls (i.e., "Get Weather Near Me" button)
   // ------------------------
@@ -257,9 +269,9 @@
 
   if (createBtn) {
     createBtn.addEventListener("click", async () => {
-      createStatus.textContent = "";
-
       try {
+        setCreateLoading(true, "Creating record…");
+
         const payload = {
           location: locInput.value.trim(),
           start_date: start.value,
@@ -273,14 +285,12 @@
         });
 
         const data = await resp.json();
-        if (!resp.ok) {
-          throw new Error(data.detail || "Create failed.");
-        }
+        if (!resp.ok) throw new Error(data.detail || "Create failed.");
 
-        createStatus.textContent = `Created record #${data.id}. Opening…`;
+        setCreateLoading(true, `Created record #${data.id}. Opening…`);
         window.location.href = `/records/${data.id}`;
       } catch (e) {
-        createStatus.textContent = e.message;
+        setCreateLoading(false, e.message);
       }
     });
   }

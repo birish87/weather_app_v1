@@ -63,7 +63,7 @@ curl "http://127.0.0.1:8000/api/weather?q=Austin,TX%20US"
 ```bash
 curl -X POST "http://127.0.0.1:8000/api/records" \
   -H "Content-Type: application/json" \
-  -d '{"location":"Austin, TX","start_date":"2025-12-10","end_date":"2025-12-15"}'
+  -d '{"location":"Dallas, TX US","start_date":"2025-12-10","end_date":"2025-12-15"}'
 ```
 
 ### Export

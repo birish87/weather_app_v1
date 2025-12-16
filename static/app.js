@@ -188,49 +188,51 @@
     `;
   }
 
-  if (geoBtn) {
-    geoBtn.addEventListener("click", () => {
-      geoStatus.textContent = "";
-      geoResult.style.display = "none";
-      geoResult.innerHTML = "";
+  geoBtn.addEventListener("click", () => {
+  geoStatus.textContent = "Getting your location…";
+  geoResult.style.display = "none";
+  geoResult.innerHTML = "";
+  getLocationWithRetry(1);
+});
 
-      if (!navigator.geolocation) {
-        geoStatus.textContent = "Geolocation not supported in this browser.";
-        return;
+
+  function getLocationWithRetry(retries = 1) {
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      try {
+        const { latitude, longitude } = pos.coords;
+        geoStatus.textContent = "Fetching weather…";
+
+        const resp = await fetch(
+          `/api/weather/by-coords?lat=${latitude}&lon=${longitude}`
+        );
+        const data = await resp.json();
+
+        if (!resp.ok) throw new Error(data.detail || "Weather fetch failed.");
+
+        geoResult.innerHTML = renderWeatherCard(data);
+        geoResult.style.display = "block";
+        geoStatus.textContent = "";
+      } catch (e) {
+        geoStatus.textContent = e.message;
       }
-
-      geoStatus.textContent = "Getting your location…";
-
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          try {
-            const { latitude, longitude } = pos.coords;
-            geoStatus.textContent = "Fetching weather…";
-
-            const resp = await fetch(
-              `/api/weather/by-coords?lat=${latitude}&lon=${longitude}`
-            //`/api/weather/by-coords?lat=55.0084&lon=82.9357`
-            );
-            const data = await resp.json();
-
-            if (!resp.ok) {
-              throw new Error(data.detail || "Weather fetch failed.");
-            }
-
-            geoResult.innerHTML = renderWeatherCard(data);
-            geoResult.style.display = "block";
-            geoStatus.textContent = "";
-          } catch (e) {
-            geoStatus.textContent = e.message;
-          }
-        },
-        () => {
-          geoStatus.textContent = "Location permission denied or unavailable.";
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
-    });
-  }
+    },
+    (err) => {
+      if (retries > 0) {
+        console.warn("Retrying geolocation…", err);
+        setTimeout(() => getLocationWithRetry(retries - 1), 600);
+      } else {
+        geoStatus.textContent =
+          "Unable to get location. Please allow location access and try again.";
+      }
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0,
+    }
+  );
+}
 
   // -----------------------
   // CRUD create record

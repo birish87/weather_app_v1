@@ -381,14 +381,15 @@ class OpenWeatherClient:
             steps = grouped[d]
 
             # percent chance of precipitation for the day
-            pops = []
-            for x in steps:
-                # pop is 0..1, may not exist on all steps
-                if "pop" in x and x["pop"] is not None:
-                    pops.append(float(x["pop"]))
+            pops = [
+                float(x["pop"])
+                for x in steps
+                if "pop" in x and x["pop"] is not None
+            ]
 
-            pop_max = max(pops) if pops else None  # 0..1
-            pop_pct = round(pop_max * 100) if pop_max is not None else None
+            # Use average probability instead of max
+            pop_avg = sum(pops) / len(pops) if pops else None
+            pop_pct = round(pop_avg * 100) if pop_avg is not None else None
 
             temps = [
                 float(x["main"]["temp"])
@@ -416,7 +417,6 @@ class OpenWeatherClient:
                 "tmax": tmax,
                 "icon": icon,
                 "description": desc,
-                "pop_max": pop_max,
                 "pop_pct": pop_pct,
             })
 
